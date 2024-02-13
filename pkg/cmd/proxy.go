@@ -3,18 +3,21 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
 	"github.com/rajatjindal/kubectl-reverse-proxy/pkg/proxy"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/kubernetes"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
 type ReverseProxyOptions struct {
+	K8sClient     kubernetes.Interface
+	IOStreams     genericclioptions.IOStreams
+	Factory       cmdutil.Factory
 	LabelSelector string
 	LocalPort     string
 	Namespace     string
+	StopCh        chan struct{}
 }
 
 func StartReverseProxy(ctx context.Context, opts ReverseProxyOptions) error {
@@ -22,23 +25,14 @@ func StartReverseProxy(ctx context.Context, opts ReverseProxyOptions) error {
 		return fmt.Errorf("labelselector is mandatory")
 	}
 
-	var err error
-	k8sclient, err := getKubernetesClientset()
-	if err != nil {
-		return err
-	}
-
-	stopCh := make(chan struct{})
-	factory, streams := NewCommandFactory()
-
 	config := &proxy.Config{
-		K8sClient:     k8sclient,
+		K8sClient:     opts.K8sClient,
 		LabelSelector: opts.LabelSelector,
 		Namespace:     opts.Namespace,
 		ListenPort:    fmt.Sprintf(":%s", opts.LocalPort),
-		Factory:       factory,
-		Streams:       streams,
-		StopCh:        stopCh,
+		Factory:       opts.Factory,
+		Streams:       opts.IOStreams,
+		StopCh:        opts.StopCh,
 	}
 
 	fmt.Printf("starting reverse proxy listening on localhost:%s\n", opts.LocalPort)
@@ -46,20 +40,5 @@ func StartReverseProxy(ctx context.Context, opts ReverseProxyOptions) error {
 	//starts in background
 	proxy.Start(ctx, config)
 
-	sigterm := make(chan os.Signal, 1)
-	signal.Notify(sigterm, syscall.SIGTERM)
-	signal.Notify(sigterm, syscall.SIGINT)
-	<-sigterm
-
-	close(stopCh)
-	fmt.Println("stopping proxy. Press Ctrl + c again to kill immediately")
-
-	for {
-		select {
-		case <-sigterm:
-			return nil
-		case <-time.NewTicker(2 * time.Second).C:
-			return nil
-		}
-	}
+	return nil
 }

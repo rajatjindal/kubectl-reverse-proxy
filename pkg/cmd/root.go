@@ -3,6 +3,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -25,16 +28,45 @@ func newRootCmd() *cobra.Command {
 			namespace := getNamespace(configFlags)
 			localPort, _ := cmd.Flags().GetString("local-port")
 
+			k8sclient, err := getKubernetesClientset()
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+			factory, streams := NewCommandFactory()
+			stopCh := make(chan struct{})
 			opts := ReverseProxyOptions{
 				LabelSelector: labelSelector,
 				Namespace:     namespace,
 				LocalPort:     localPort,
+				Factory:       factory,
+				IOStreams:     streams,
+				K8sClient:     k8sclient,
+				StopCh:        stopCh,
 			}
 
-			err := StartReverseProxy(cmd.Context(), opts)
+			err = StartReverseProxy(cmd.Context(), opts)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
+			}
+
+			sigterm := make(chan os.Signal, 1)
+			signal.Notify(sigterm, syscall.SIGTERM)
+			signal.Notify(sigterm, syscall.SIGINT)
+			<-sigterm
+
+			close(stopCh)
+			fmt.Println("stopping proxy. Press Ctrl + c again to kill immediately")
+
+			for {
+				select {
+				case <-sigterm:
+					return
+				case <-time.NewTicker(2 * time.Second).C:
+					return
+				}
 			}
 		},
 	}
