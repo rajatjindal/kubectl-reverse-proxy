@@ -1,0 +1,41 @@
+{
+    "logging": {
+        "logs": {
+            "default": {
+                "writer": {"output":"discard"}
+            }
+        }
+    },
+	"apps": {
+		"http": {
+			"servers": {
+				"k8s-proxy": {
+					"listen": [
+                    	"127.0.0.1{{ .ListenOnPort }}"
+                     ],
+					"routes": [{
+						"handle": [{
+							"handler": "reverse_proxy",
+							"transport": {
+	                            "protocol": "http",
+	                            "read_buffer_size": 4096
+							},
+							"upstreams": [
+								{{ $i := 0 }}
+								{{- $port := "" }}
+								{{- range $i, $port = .Ports -}}
+								{{- if ne $i 0 -}}
+								,
+								{{ end -}}
+								{
+									"Dial": "localhost:{{ . }}"
+								}
+								{{- end }}
+							]
+						}]
+					}]
+				}
+			}
+		}
+	}
+}
