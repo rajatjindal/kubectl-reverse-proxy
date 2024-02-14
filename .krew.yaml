@@ -14,7 +14,7 @@ spec:
     files:
     - from: "*"
       to: "."
-    bin: kubectl-reverse-proxy
+    bin: kubectl-reverse_proxy
   - selector:
       matchLabels:
         os: darwin
@@ -23,7 +23,7 @@ spec:
     files:
     - from: "*"
       to: "."
-    bin: kubectl-reverse-proxy
+    bin: kubectl-reverse_proxy
   - selector:
       matchLabels:
         os: linux
@@ -32,7 +32,7 @@ spec:
     files:
     - from: "*"
       to: "."
-    bin: kubectl-reverse-proxy
+    bin: kubectl-reverse_proxy
   - selector:
       matchLabels:
         os: linux
@@ -41,7 +41,7 @@ spec:
     files:
     - from: "*"
       to: "."
-    bin: kubectl-reverse-proxy
+    bin: kubectl-reverse_proxy
   - selector:
       matchLabels:
         os: windows
@@ -50,7 +50,8 @@ spec:
     files:
     - from: "*"
       to: "."
-    bin: kubectl-reverse-proxy.exe
+    bin: kubectl-reverse_proxy.exe
   shortDescription: Runs the reverse proxy locally and route traffic to all pods behind the given service object.
   description: |
     Runs the reverse proxy locally and route traffic to all pods behind the given service object.
+

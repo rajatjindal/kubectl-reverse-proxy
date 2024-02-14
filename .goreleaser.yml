@@ -1,7 +1,7 @@
 builds:
 - id: kubectl-reverse-proxy
   main: ./
-  binary: kubectl-reverse-proxy
+  binary: kubectl-reverse_proxy
   env:
   - CGO_ENABLED=0
   ldflags:
