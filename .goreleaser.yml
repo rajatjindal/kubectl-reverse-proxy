@@ -1,0 +1,25 @@
+builds:
+- id: kubectl-reverse-proxy
+  main: ./
+  binary: kubectl-reverse-proxy
+  env:
+  - CGO_ENABLED=0
+  ldflags:
+  - "-s -w -X github.com/rajatjindal/kubectl-reverse-proxy/pkg/cmd.Version={{.Version}}"
+  goos:
+  - darwin
+  - linux
+  - windows
+  goarch:
+  - amd64
+  - arm64
+
+archives:
+- builds:
+  - kubectl-reverse-proxy
+  name_template: "{{ .ProjectName }}_{{ .Tag }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+  wrap_in_directory: false
+  format: tar.gz
+  files:
+  - LICENSE
+

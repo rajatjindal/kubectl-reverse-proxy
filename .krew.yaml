@@ -1,0 +1,56 @@
+apiVersion: krew.googlecontainertools.github.com/v1alpha2
+kind: Plugin
+metadata:
+  name: reverse-proxy
+spec:
+  version: {{ .TagName }}
+  homepage: https://github.com/rajatjindal/kubectl-reverse-proxy
+  platforms:
+  - selector:
+      matchLabels:
+        os: darwin
+        arch: amd64
+    {{addURIAndSha "https://github.com/rajatjindal/kubectl-reverse-proxy/releases/download/{{ .TagName }}/kubectl-reverse-proxy_{{ .TagName }}_darwin_amd64.tar.gz" .TagName }}
+    files:
+    - from: "*"
+      to: "."
+    bin: kubectl-reverse-proxy
+  - selector:
+      matchLabels:
+        os: darwin
+        arch: arm64
+    {{addURIAndSha "https://github.com/rajatjindal/kubectl-reverse-proxy/releases/download/{{ .TagName }}/kubectl-reverse-proxy_{{ .TagName }}_darwin_arm64.tar.gz" .TagName }}
+    files:
+    - from: "*"
+      to: "."
+    bin: kubectl-reverse-proxy
+  - selector:
+      matchLabels:
+        os: linux
+        arch: amd64
+    {{addURIAndSha "https://github.com/rajatjindal/kubectl-reverse-proxy/releases/download/{{ .TagName }}/kubectl-reverse-proxy_{{ .TagName }}_linux_amd64.tar.gz" .TagName }}
+    files:
+    - from: "*"
+      to: "."
+    bin: kubectl-reverse-proxy
+  - selector:
+      matchLabels:
+        os: linux
+        arch: arm64
+    {{addURIAndSha "https://github.com/rajatjindal/kubectl-reverse-proxy/releases/download/{{ .TagName }}/kubectl-reverse-proxy_{{ .TagName }}_linux_arm64.tar.gz" .TagName }}
+    files:
+    - from: "*"
+      to: "."
+    bin: kubectl-reverse-proxy
+  - selector:
+      matchLabels:
+        os: windows
+        arch: amd64
+    {{addURIAndSha "https://github.com/rajatjindal/kubectl-reverse-proxy/releases/download/{{ .TagName }}/kubectl-reverse-proxy_{{ .TagName }}_windows_amd64.tar.gz" .TagName }}
+    files:
+    - from: "*"
+      to: "."
+    bin: kubectl-reverse-proxy.exe
+  shortDescription: Runs the reverse proxy locally and route traffic to all pods behind the given service object.
+  description: |
+    Runs the reverse proxy locally and route traffic to all pods behind the given service object.
