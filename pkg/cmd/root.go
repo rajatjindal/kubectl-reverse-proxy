@@ -13,6 +13,9 @@ import (
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
+// Version is set during build time
+var Version = "unknown"
+
 var configFlags = genericclioptions.NewConfigFlags(true)
 var labelSelector = ""
 
@@ -21,10 +24,15 @@ var rootCmd = newRootCmd()
 
 func newRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:     "reverse-proxy",
+		Use:     "reverse-proxy [service name]",
 		Short:   "Starts a reverse proxy to all pods behind a service",
 		Version: Version,
 		Run: func(cmd *cobra.Command, args []string) {
+			var name string
+			if len(args) > 0 {
+				name = args[0]
+			}
+
 			namespace := getNamespace(configFlags)
 			localPort, _ := cmd.Flags().GetString("local-port")
 
@@ -37,8 +45,9 @@ func newRootCmd() *cobra.Command {
 			factory, streams := NewCommandFactory()
 			stopCh := make(chan struct{})
 			opts := ReverseProxyOptions{
-				LabelSelector: labelSelector,
+				Name:          name,
 				Namespace:     namespace,
+				LabelSelector: labelSelector,
 				LocalPort:     localPort,
 				Factory:       factory,
 				IOStreams:     streams,

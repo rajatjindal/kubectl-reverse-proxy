@@ -14,6 +14,7 @@ type ReverseProxyOptions struct {
 	K8sClient     kubernetes.Interface
 	IOStreams     genericclioptions.IOStreams
 	Factory       cmdutil.Factory
+	Name          string
 	LabelSelector string
 	LocalPort     string
 	Namespace     string
@@ -21,8 +22,16 @@ type ReverseProxyOptions struct {
 }
 
 func StartReverseProxy(ctx context.Context, opts ReverseProxyOptions) error {
-	if opts.LabelSelector == "" {
-		return fmt.Errorf("labelselector is mandatory")
+	if opts.Name == "" && opts.LabelSelector == "" {
+		return fmt.Errorf("one of name or label selector is required")
+	}
+
+	if opts.Name != "" && opts.LabelSelector != "" {
+		return fmt.Errorf("only one of name or label selector can be provided")
+	}
+
+	if opts.Name != "" {
+		opts.LabelSelector = fmt.Sprintf("kubernetes.io/service-name=%s", opts.Name)
 	}
 
 	config := &proxy.Config{

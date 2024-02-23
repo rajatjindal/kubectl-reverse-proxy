@@ -54,6 +54,10 @@ func (p *proxy) updateBackends(eps *discoveryv1.EndpointSlice) {
 
 	// ensure all active pods are configured as backends
 	for _, ep := range eps.Endpoints {
+		if ep.TargetRef == nil {
+			continue
+		}
+
 		podName := ep.TargetRef.Name
 		activePodMap[podName] = struct{}{}
 
