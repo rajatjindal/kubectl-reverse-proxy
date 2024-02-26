@@ -35,8 +35,7 @@ func (p *proxy) runPortForward(podName string, localPort, remotePort string, sto
 }
 
 type defaultPortForwarder struct {
-	stopCh  <-chan struct{}
-	readyCh chan struct{}
+	stopCh <-chan struct{}
 	genericiooptions.IOStreams
 }
 
