@@ -28,6 +28,7 @@ type Config struct {
 	LabelSelector string
 	Namespace     string
 	K8sClient     kubernetes.Interface
+	AdminPort     string
 	ListenPort    string
 	Factory       cmdutil.Factory
 	Streams       genericclioptions.IOStreams
@@ -39,7 +40,7 @@ func Start(ctx context.Context, config *Config) {
 		portMap:         map[string]string{},
 		unwatchPodChMap: map[string]chan struct{}{},
 		config:          config,
-		reverseproxy:    NewCaddyReverseProxy(config.ListenPort, config.StopCh),
+		reverseproxy:    NewCaddyReverseProxy(config.ListenPort, config.AdminPort, config.StopCh),
 	}
 
 	go p.reverseproxy.Start()

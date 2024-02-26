@@ -14,24 +14,24 @@ import (
 	_ "github.com/caddyserver/caddy/v2/modules/caddyhttp/reverseproxy"
 )
 
-const caddyAdminSvc = "http://localhost:2019"
-
 //go:embed caddyfile.tmpl
 var caddyConfigTmpl string
 
 type caddylb struct {
 	listenPort string
+	adminPort  string
 	stopCh     <-chan struct{}
 	reloadCh   chan map[string]string
 	httpclient *http.Client
 }
 
-func NewCaddyReverseProxy(listenPort string, stopCh <-chan struct{}) *caddylb {
+func NewCaddyReverseProxy(listenPort string, adminPort string, stopCh <-chan struct{}) *caddylb {
 	return &caddylb{
 		httpclient: &http.Client{
 			Timeout: 2 * time.Second,
 		},
 		listenPort: listenPort,
+		adminPort:  adminPort,
 		stopCh:     stopCh,
 		reloadCh:   make(chan map[string]string),
 	}
@@ -64,7 +64,7 @@ func (c *caddylb) regenAndReload(portmap map[string]string) {
 }
 
 func (c *caddylb) stop() error {
-	req, err := http.NewRequest(http.MethodPost, getAdminEndpointUrl("/stop"), nil)
+	req, err := http.NewRequest(http.MethodPost, c.getAdminEndpointUrl("/stop"), nil)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (c *caddylb) stop() error {
 }
 
 func (c *caddylb) reload(caddyconfig string) error {
-	req, err := http.NewRequest(http.MethodPost, getAdminEndpointUrl("/load"), strings.NewReader(caddyconfig))
+	req, err := http.NewRequest(http.MethodPost, c.getAdminEndpointUrl("/load"), strings.NewReader(caddyconfig))
 	if err != nil {
 		return err
 	}
@@ -103,9 +103,11 @@ func (c *caddylb) regenConfig(portMap map[string]string) (string, error) {
 	config := struct {
 		Ports        []string
 		ListenOnPort string
+		AdminPort    string
 	}{
 		Ports:        ports,
 		ListenOnPort: c.listenPort,
+		AdminPort:    c.adminPort,
 	}
 
 	tmpl, err := template.New("backendconfig").Parse(caddyConfigTmpl)
@@ -123,7 +125,11 @@ func (c *caddylb) regenConfig(portMap map[string]string) (string, error) {
 }
 
 func (c *caddylb) run() {
-	caddy.Run(nil)
+	caddy.Run(&caddy.Config{
+		Admin: &caddy.AdminConfig{
+			Listen: c.caddyAdminSvc(),
+		},
+	})
 
 	for {
 		select {
@@ -138,6 +144,10 @@ func (c *caddylb) run() {
 	}
 }
 
-func getAdminEndpointUrl(path string) string {
-	return fmt.Sprintf("%s%s", caddyAdminSvc, path)
+func (c *caddylb) caddyAdminSvc() string {
+	return fmt.Sprintf("localhost:%s", c.adminPort)
+}
+
+func (c *caddylb) getAdminEndpointUrl(path string) string {
+	return fmt.Sprintf("http://%s%s", c.caddyAdminSvc(), path)
 }
