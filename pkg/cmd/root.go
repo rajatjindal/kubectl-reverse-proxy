@@ -34,7 +34,17 @@ func newRootCmd() *cobra.Command {
 			}
 
 			namespace := getNamespace(configFlags)
-			localPort, _ := cmd.Flags().GetString("local-port")
+			localPort, err := cmd.Flags().GetString("local-port")
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+			adminPort, err := cmd.Flags().GetString("admin-port")
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 
 			k8sclient, err := getKubernetesClientset()
 			if err != nil {
@@ -49,6 +59,7 @@ func newRootCmd() *cobra.Command {
 				Namespace:     namespace,
 				LabelSelector: labelSelector,
 				LocalPort:     localPort,
+				AdminPort:     adminPort,
 				Factory:       factory,
 				IOStreams:     streams,
 				K8sClient:     k8sclient,
@@ -82,6 +93,7 @@ func newRootCmd() *cobra.Command {
 
 	configFlags.AddFlags(rootCmd.Flags())
 	rootCmd.Flags().StringP("local-port", "p", "9090", "Local port to listen on")
+	rootCmd.Flags().StringP("admin-port", "a", "2019", "admin port for reverse proxy")
 	cmdutil.AddLabelSelectorFlagVar(rootCmd, &labelSelector)
 
 	return rootCmd

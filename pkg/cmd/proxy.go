@@ -16,6 +16,7 @@ type ReverseProxyOptions struct {
 	Factory       cmdutil.Factory
 	Name          string
 	LabelSelector string
+	AdminPort     string
 	LocalPort     string
 	Namespace     string
 	StopCh        chan struct{}
@@ -38,7 +39,8 @@ func StartReverseProxy(ctx context.Context, opts ReverseProxyOptions) error {
 		K8sClient:     opts.K8sClient,
 		LabelSelector: opts.LabelSelector,
 		Namespace:     opts.Namespace,
-		ListenPort:    fmt.Sprintf(":%s", opts.LocalPort),
+		ListenPort:    opts.LocalPort,
+		AdminPort:     opts.AdminPort,
 		Factory:       opts.Factory,
 		Streams:       opts.IOStreams,
 		StopCh:        opts.StopCh,
