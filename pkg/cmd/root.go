@@ -46,6 +46,12 @@ func newRootCmd() *cobra.Command {
 				os.Exit(1)
 			}
 
+			metrics, err := cmd.Flags().GetBool("metrics")
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
 			k8sclient, err := getKubernetesClientset()
 			if err != nil {
 				fmt.Println(err)
@@ -64,6 +70,7 @@ func newRootCmd() *cobra.Command {
 				IOStreams:     streams,
 				K8sClient:     k8sclient,
 				StopCh:        stopCh,
+				EnableMetrics: metrics,
 			}
 
 			err = StartReverseProxy(cmd.Context(), opts)
@@ -94,6 +101,7 @@ func newRootCmd() *cobra.Command {
 	configFlags.AddFlags(rootCmd.Flags())
 	rootCmd.Flags().StringP("local-port", "p", "9090", "Local port to listen on")
 	rootCmd.Flags().StringP("admin-port", "a", "2019", "admin port for reverse proxy")
+	rootCmd.Flags().BoolP("metrics", "m", false, "enable middleware metrics for reverse proxy")
 	cmdutil.AddLabelSelectorFlagVar(rootCmd, &labelSelector)
 
 	return rootCmd

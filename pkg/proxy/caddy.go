@@ -12,6 +12,7 @@ import (
 	"github.com/caddyserver/caddy/v2"
 	_ "github.com/caddyserver/caddy/v2/modules/caddyhttp"
 	_ "github.com/caddyserver/caddy/v2/modules/caddyhttp/reverseproxy"
+	_ "github.com/caddyserver/caddy/v2/modules/metrics"
 )
 
 //go:embed caddyfile.tmpl
@@ -20,13 +21,14 @@ var caddyConfigTmpl string
 type caddylb struct {
 	listenPort string
 	adminPort  string
+	metrics    bool
 	stopCh     <-chan struct{}
 	reloadCh   chan map[string]string
 	httpclient *http.Client
 }
 
-func NewCaddyReverseProxy(listenPort string, adminPort string, stopCh <-chan struct{}) *caddylb {
-	return &caddylb{
+func NewCaddyReverseProxy(listenPort string, adminPort string, stopCh <-chan struct{}, withOptions ...WithOptions) *caddylb {
+	clb := &caddylb{
 		httpclient: &http.Client{
 			Timeout: 2 * time.Second,
 		},
@@ -34,6 +36,20 @@ func NewCaddyReverseProxy(listenPort string, adminPort string, stopCh <-chan str
 		adminPort:  adminPort,
 		stopCh:     stopCh,
 		reloadCh:   make(chan map[string]string),
+	}
+
+	for _, fn := range withOptions {
+		fn(clb)
+	}
+
+	return clb
+}
+
+type WithOptions func(c *caddylb)
+
+func WithMetrics(enabled bool) WithOptions {
+	return func(c *caddylb) {
+		c.metrics = enabled
 	}
 }
 
@@ -104,10 +120,12 @@ func (c *caddylb) regenConfig(portMap map[string]string) (string, error) {
 		Ports        []string
 		ListenOnPort string
 		AdminPort    string
+		Metrics      bool
 	}{
 		Ports:        ports,
 		ListenOnPort: c.listenPort,
 		AdminPort:    c.adminPort,
+		Metrics:      c.metrics,
 	}
 
 	tmpl, err := template.New("backendconfig").Parse(caddyConfigTmpl)

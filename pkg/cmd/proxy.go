@@ -20,6 +20,7 @@ type ReverseProxyOptions struct {
 	LocalPort     string
 	Namespace     string
 	StopCh        chan struct{}
+	EnableMetrics bool
 }
 
 func StartReverseProxy(ctx context.Context, opts ReverseProxyOptions) error {
@@ -44,6 +45,7 @@ func StartReverseProxy(ctx context.Context, opts ReverseProxyOptions) error {
 		Factory:       opts.Factory,
 		Streams:       opts.IOStreams,
 		StopCh:        opts.StopCh,
+		EnableMetrics: opts.EnableMetrics,
 	}
 
 	fmt.Printf("starting reverse proxy listening on localhost:%s\n", opts.LocalPort)

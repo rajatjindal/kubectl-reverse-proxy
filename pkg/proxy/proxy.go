@@ -33,6 +33,7 @@ type Config struct {
 	Factory       cmdutil.Factory
 	Streams       genericclioptions.IOStreams
 	StopCh        <-chan struct{}
+	EnableMetrics bool
 }
 
 func Start(ctx context.Context, config *Config) {
@@ -40,7 +41,7 @@ func Start(ctx context.Context, config *Config) {
 		portMap:         map[string]string{},
 		unwatchPodChMap: map[string]chan struct{}{},
 		config:          config,
-		reverseproxy:    NewCaddyReverseProxy(config.ListenPort, config.AdminPort, config.StopCh),
+		reverseproxy:    NewCaddyReverseProxy(config.ListenPort, config.AdminPort, config.StopCh, WithMetrics(config.EnableMetrics)),
 	}
 
 	go p.reverseproxy.Start()

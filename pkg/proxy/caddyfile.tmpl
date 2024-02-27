@@ -16,6 +16,9 @@
           "listen": [
             "127.0.0.1:{{ .ListenOnPort }}"
           ],
+          {{ if eq .Metrics true }}
+          "metrics": {},
+          {{ end }}
           "routes": [
             {
               "handle": [
