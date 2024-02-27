@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rajatjindal/kubectl-reverse-proxy/pkg/dashboard"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -78,6 +79,9 @@ func newRootCmd() *cobra.Command {
 				fmt.Println(err)
 				os.Exit(1)
 			}
+
+			dash := dashboard.New(9092, fmt.Sprintf("http://localhost:%s/metrics", adminPort))
+			dash.Start()
 
 			sigterm := make(chan os.Signal, 1)
 			signal.Notify(sigterm, syscall.SIGTERM)
