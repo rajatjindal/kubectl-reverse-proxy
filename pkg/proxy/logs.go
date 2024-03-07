@@ -7,8 +7,11 @@ import (
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
-// runLogsFollow start tail of given pod
-// currently it does not support using stopCh to stop tailing of logs
+// runLogsFollow is a method that runs a log stream for a specific pod in a Kubernetes cluster. It continuously streams
+// the logs and prefixes each log line with the timestamp. The method takes the pod name as a parameter and a channel to
+// signal when to stop streaming the logs.
+//
+// TODO: add support to use stopCh to stop tailing of logs.
 func (p *proxy) runLogsFollow(podName string, _ <-chan struct{}) {
 	logOpts := logs.NewLogsOptions(p.config.Streams, false)
 	logOpts.Follow = true

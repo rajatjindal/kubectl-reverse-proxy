@@ -14,7 +14,7 @@
       "servers": {
         "k8s-proxy": {
           "listen": [
-            "127.0.0.1:{{ .ListenOnPort }}"
+            "localhost:{{ .ListenOnPort }}"
           ],
           {{ if eq .Metrics true }}
           "metrics": {},

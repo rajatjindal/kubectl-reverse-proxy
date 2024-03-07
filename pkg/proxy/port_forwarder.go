@@ -39,6 +39,11 @@ type defaultPortForwarder struct {
 	genericiooptions.IOStreams
 }
 
+// ForwardPorts forwards ports using the specified method, URL, and options. It establishes a round-tripper, dialer, and
+// port forwarder to facilitate the port forwarding process. The method parameter specifies the HTTP method to use for
+// the port forwarding request. The url parameter specifies the URL to forward ports to. The opts parameter contains the
+// port forwarding options, including the configuration, addresses, ports, and channels. It returns an error if any
+// error occurs during the port forwarding process.
 func (f *defaultPortForwarder) ForwardPorts(method string, url *url.URL, opts portforward.PortForwardOptions) error {
 	transport, upgrader, err := spdy.RoundTripperFor(opts.Config)
 	if err != nil {
