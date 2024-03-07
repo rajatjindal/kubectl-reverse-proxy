@@ -15,6 +15,7 @@ This plugin is different in that it sends the traffic to all the pods behind a g
 # Usage
 
 ```bash
+## start the reverse proxy plugin
 -> kubectl reverse-proxy simple-app
 
 starting reverse proxy listening on localhost:9090
@@ -27,6 +28,10 @@ starting reverse proxy listening on localhost:9090
 [pod/simple-app-6c4fc84dd6-b49lb/simple-app] 2024-03-07T14:27:31.841360710Z Available Routes:
 [pod/simple-app-6c4fc84dd6-b49lb/simple-app] 2024-03-07T14:27:31.841361501Z   hello: http://0.0.0.0:80/hello
 [pod/simple-app-6c4fc84dd6-b49lb/simple-app] 2024-03-07T14:27:31.841363043Z   go-hello: http://0.0.0.0:80/go-hello
+
+## open a new terminal and you can now send request to "http://localhost:9090" which will be routed to your service inside Kubernetes cluster
+-> curl http://localhost:9090/hello
+Hello world from your app!
 ```
 
 with dashboard enabled
@@ -45,6 +50,12 @@ starting metrics dashboard at http://localhost:9092
 [pod/simple-app-6c4fc84dd6-b49lb/simple-app] 2024-03-07T14:27:31.841360710Z Available Routes:
 [pod/simple-app-6c4fc84dd6-b49lb/simple-app] 2024-03-07T14:27:31.841361501Z   hello: http://0.0.0.0:80/hello
 [pod/simple-app-6c4fc84dd6-b49lb/simple-app] 2024-03-07T14:27:31.841363043Z   go-hello: http://0.0.0.0:80/go-hello
+
+## open a new terminal and you can now send request to "http://localhost:9090" which will be routed to your service inside Kubernetes cluster
+-> curl http://localhost:9090/hello
+Hello world from your app!
+
+## open browser and point to http://localhost:9092, you should see realtime change in number of servers based on number of pods serving traffic for your app in Kubernetes cluster
 ```
 
 provide namespace explicitly
