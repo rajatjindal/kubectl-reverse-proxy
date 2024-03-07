@@ -8,7 +8,7 @@ import (
 )
 
 type server struct {
-	port            int
+	port            string
 	stopCh          chan struct{}
 	client          *http.Client
 	rvaddr          string
@@ -17,7 +17,7 @@ type server struct {
 	sync.Mutex
 }
 
-func New(dashport int, rvaddr string) *server {
+func New(dashport string, rvaddr string) *server {
 	return &server{
 		rvaddr: rvaddr,
 		port:   dashport,
@@ -30,7 +30,6 @@ func New(dashport int, rvaddr string) *server {
 
 func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
-		fmt.Println("options?")
 		w.Header().Set("access-control-allow-origin", "*")
 		w.Header().Set("access-control-allow-methods", "OPTIONS, GET, POST, PATCH, PUT, HEAD, DELETE")
 		w.Header().Set("access-control-allow-headers", "authorization, content-type")
@@ -47,8 +46,8 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) Start() {
-	x := &http.Server{
-		Addr:           fmt.Sprintf(":%d", s.port),
+	server := &http.Server{
+		Addr:           fmt.Sprintf(":%s", s.port),
 		Handler:        s,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
@@ -56,7 +55,7 @@ func (s *server) Start() {
 	}
 
 	go func() {
-		x.ListenAndServe()
+		server.ListenAndServe()
 	}()
 
 	go s.startCollector()

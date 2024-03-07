@@ -33,76 +33,88 @@ func (p *proxy) startController(ctx context.Context) {
 
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			p.updateBackends(obj.(*discoveryv1.EndpointSlice))
+			p.updateBackends(informer.GetStore().List())
 		},
 		UpdateFunc: func(old, newobj interface{}) {
-			p.updateBackends(newobj.(*discoveryv1.EndpointSlice))
+			p.updateBackends(informer.GetIndexer().List())
 		},
 		DeleteFunc: func(obj interface{}) {
-			p.updateBackends(obj.(*discoveryv1.EndpointSlice))
+			p.updateBackends(informer.GetIndexer().List())
 		},
 	})
 
 	informer.Run(p.config.StopCh)
 }
 
-func (p *proxy) updateBackends(eps *discoveryv1.EndpointSlice) {
+func (p *proxy) updateBackends(epsList []interface{}) {
 	p.Lock()
 	defer p.Unlock()
 
 	activePodMap := map[string]struct{}{}
 
-	// ensure all active pods are configured as backends
-	for _, ep := range eps.Endpoints {
-		if ep.TargetRef == nil {
+	for _, epsI := range epsList {
+		eps, ok := epsI.(*discoveryv1.EndpointSlice)
+		if !ok {
+			fmt.Printf("err: found an item of type %T, expected *discoveryv1.EndpointSlice\n", epsI)
 			continue
 		}
 
-		podName := ep.TargetRef.Name
-		activePodMap[podName] = struct{}{}
-
-		// this pod is already configured as backend
-		if _, exists := p.portMap[podName]; exists {
-			continue
-		}
-
-		localPort := getRandomPort()
-		unwatchPodCh := make(chan struct{})
-
-		remotePort := ""
-		if len(eps.Ports) > 0 {
-			if eps.Ports[0].Name != nil && *eps.Ports[0].Name != "" {
-				remotePort = *eps.Ports[0].Name
-			} else {
-				remotePort = fmt.Sprintf("%d", *eps.Ports[0].Port)
+		// ensure all active pods are configured as backends
+		for _, ep := range eps.Endpoints {
+			if ep.TargetRef == nil {
+				continue
 			}
+
+			if ep.Conditions.Serving != nil && !*ep.Conditions.Serving {
+				continue
+			}
+
+			podName := ep.TargetRef.Name
+			activePodMap[podName] = struct{}{}
+
+			// this pod is already configured as backend
+			if _, exists := p.portMap[podName]; exists {
+				continue
+			}
+
+			localPort := getRandomPort()
+			unwatchPodCh := make(chan struct{})
+
+			remotePort := ""
+			if len(eps.Ports) > 0 {
+				if eps.Ports[0].Name != nil && *eps.Ports[0].Name != "" {
+					remotePort = *eps.Ports[0].Name
+				} else {
+					remotePort = fmt.Sprintf("%d", *eps.Ports[0].Port)
+				}
+			}
+
+			go p.runPortForward(podName, localPort, remotePort, unwatchPodCh)
+			go p.runLogsFollow(podName, unwatchPodCh)
+
+			p.portMap[podName] = localPort
+			p.unwatchPodChMap[podName] = unwatchPodCh
 		}
 
-		go p.runPortForward(podName, localPort, remotePort, unwatchPodCh)
-		go p.runLogsFollow(podName, unwatchPodCh)
+		// remove pods no longer part of endpoint slice
+		for podName := range p.portMap {
+			_, exists := activePodMap[podName]
 
-		p.portMap[podName] = localPort
-		p.unwatchPodChMap[podName] = unwatchPodCh
-	}
+			// this pod is currently active
+			if exists {
+				continue
+			}
 
-	// remove pods no longer part of endpoint slice
-	for podName := range p.portMap {
-		_, exists := activePodMap[podName]
+			// this will stop the port-forward command goroutine
+			close(p.unwatchPodChMap[podName])
 
-		// this pod is currently active
-		if exists {
-			continue
+			// delete from known portMap
+			delete(p.portMap, podName)
 		}
 
-		// this will stop the port-forward command goroutine
-		close(p.unwatchPodChMap[podName])
-
-		// delete from known portMap
-		delete(p.portMap, podName)
+		// reload caddy config
+		p.reverseproxy.Reload(p.portMap)
 	}
-
-	// reload caddy config
-	p.reverseproxy.Reload(p.portMap)
 }
 
 func getRandomPort() string {

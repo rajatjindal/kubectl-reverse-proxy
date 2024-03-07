@@ -34,8 +34,8 @@
             new Chart("HealthyServersPanel", {
               type: "line",
               data: {
-                labels: data.HealthyServersPanel.labels,
-                datasets: data.HealthyServersPanel.datasets
+                labels: data.healthyServersPanel.labels,
+                datasets: data.healthyServersPanel.datasets
               },
               options: {
                 scales: {
@@ -94,7 +94,7 @@
       renderHealthyServersChart()
 
       // refresh every 5s
-      setInterval(renderHealthyServersChart, 1000)
+      setInterval(renderHealthyServersChart, 2000)
     </script>
   </body>
 

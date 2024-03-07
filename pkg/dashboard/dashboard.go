@@ -16,27 +16,9 @@ func (s *server) startCollector() error {
 	for {
 		select {
 		case <-ticker.C:
-			resp, err := s.client.Get(s.rvaddr)
+			err := s.scrapeOnce()
 			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-
-			if resp.StatusCode != http.StatusOK {
-				fmt.Println("unexpected code ", resp.StatusCode)
-				continue
-			}
-
-			raw, err := io.ReadAll(resp.Body)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			resp.Body.Close()
-
-			err = s.parseOnce(raw)
-			if err != nil {
-				fmt.Println(err)
+				fmt.Printf("error scraping data from reverse proxy endpoint%v\n", err)
 			}
 		case <-s.stopCh:
 			return nil
@@ -44,27 +26,50 @@ func (s *server) startCollector() error {
 	}
 }
 
-func (s *server) parseOnce(raw []byte) error {
+func (s *server) scrapeOnce() error {
+	resp, err := s.client.Get(s.rvaddr)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return err
+	}
+
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+
+	imData, err := s.parseRawMetrics(raw)
+	if err != nil {
+		return err
+	}
+
+	s.Lock()
+	defer s.Unlock()
+	s.instanceMetrics = append(s.instanceMetrics, imData)
+
+	return nil
+}
+
+func (s *server) parseRawMetrics(raw []byte) (*InstantMetricData, error) {
 	var parser expfmt.TextParser
 	mf, err := parser.TextToMetricFamilies(bytes.NewReader(raw))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	imData := processMetrics(mf,
 		processHealthyServersCount,
 	)
 
-	s.Lock()
-	defer s.Unlock()
-
-	s.instanceMetrics = append(s.instanceMetrics, imData)
-
-	return nil
+	return imData, nil
 }
 
 type Dashboard struct {
-	HealthyServersPanel LineChart `json:"HealthyServersPanel"`
+	HealthyServersPanel LineChart `json:"healthyServersPanel"`
 }
 
 func toDashboard(ims []*InstantMetricData) *Dashboard {

@@ -7,7 +7,6 @@ require (
 	github.com/prometheus/client_model v0.6.0
 	github.com/prometheus/common v0.49.0
 	github.com/spf13/cobra v1.8.0
-	github.com/stretchr/testify v1.8.4
 	k8s.io/api v0.29.1
 	k8s.io/apimachinery v0.29.1
 	k8s.io/cli-runtime v0.29.1
@@ -107,7 +106,6 @@ require (
 	github.com/onsi/ginkgo/v2 v2.14.0 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect

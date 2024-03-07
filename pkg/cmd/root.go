@@ -28,7 +28,7 @@ func newRootCmd() *cobra.Command {
 		Use:     "reverse-proxy [service name]",
 		Short:   "Starts a reverse proxy to all pods behind a service",
 		Version: Version,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			var name string
 			if len(args) > 0 {
 				name = args[0]
@@ -37,26 +37,32 @@ func newRootCmd() *cobra.Command {
 			namespace := getNamespace(configFlags)
 			localPort, err := cmd.Flags().GetString("local-port")
 			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
+				return err
 			}
 
 			adminPort, err := cmd.Flags().GetString("admin-port")
 			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
+				return err
 			}
 
-			metrics, err := cmd.Flags().GetBool("metrics")
+			metricsEnabled, err := cmd.Flags().GetBool("metrics")
 			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
+				return err
+			}
+
+			dashboardEnabled, err := cmd.Flags().GetBool("dashboard")
+			if err != nil {
+				return err
+			}
+
+			dashboardPort, err := cmd.Flags().GetString("dashboard-port")
+			if err != nil {
+				return err
 			}
 
 			k8sclient, err := getKubernetesClientset()
 			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
+				return err
 			}
 
 			factory, streams := NewCommandFactory()
@@ -71,17 +77,19 @@ func newRootCmd() *cobra.Command {
 				IOStreams:     streams,
 				K8sClient:     k8sclient,
 				StopCh:        stopCh,
-				EnableMetrics: metrics,
+				EnableMetrics: dashboardEnabled || metricsEnabled,
 			}
 
 			err = StartReverseProxy(cmd.Context(), opts)
 			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
+				return err
 			}
 
-			dash := dashboard.New(9092, fmt.Sprintf("http://localhost:%s/metrics", adminPort))
-			dash.Start()
+			if dashboardEnabled {
+				dash := dashboard.New(dashboardPort, fmt.Sprintf("http://localhost:%s/metrics", adminPort))
+				dash.Start()
+				fmt.Printf("starting metrics dashboard at http://localhost:%s\n", dashboardPort)
+			}
 
 			sigterm := make(chan os.Signal, 1)
 			signal.Notify(sigterm, syscall.SIGTERM)
@@ -89,14 +97,14 @@ func newRootCmd() *cobra.Command {
 			<-sigterm
 
 			close(stopCh)
-			fmt.Println("stopping proxy. Press Ctrl + c again to kill immediately")
+			fmt.Println("stop signal received... Press Ctrl + c again to kill immediately")
 
 			for {
 				select {
 				case <-sigterm:
-					return
+					return nil
 				case <-time.NewTicker(2 * time.Second).C:
-					return
+					return nil
 				}
 			}
 		},
@@ -106,6 +114,9 @@ func newRootCmd() *cobra.Command {
 	rootCmd.Flags().StringP("local-port", "p", "9090", "Local port to listen on")
 	rootCmd.Flags().StringP("admin-port", "a", "2019", "admin port for reverse proxy")
 	rootCmd.Flags().BoolP("metrics", "m", false, "enable middleware metrics for reverse proxy")
+	rootCmd.Flags().Bool("dashboard", false, "enable middleware metrics and dashboard for reverse proxy")
+	rootCmd.Flags().String("dashboard-port", "9092", "runs standalone reverse proxy dashboard on this port")
+
 	cmdutil.AddLabelSelectorFlagVar(rootCmd, &labelSelector)
 
 	return rootCmd

@@ -65,6 +65,5 @@ func processHealthyServersCount(im *InstantMetricData, mfMap map[string]*dto.Met
 func equalWithTolerane(a, b float64) bool {
 	tolerance := 0.000001
 	diff := math.Abs(a - b)
-	// fmt.Printf("diff is %f, tolerance: %f, returning %f <= %f: %t\n", diff, tolerance, diff, tolerance, diff <= tolerance)
 	return diff <= tolerance
 }
