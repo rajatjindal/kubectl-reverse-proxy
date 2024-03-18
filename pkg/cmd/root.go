@@ -80,6 +80,7 @@ func newRootCmd() *cobra.Command {
 				EnableMetrics: dashboardEnabled || metricsEnabled,
 			}
 
+			fmt.Println(opts)
 			err = StartReverseProxy(cmd.Context(), opts)
 			if err != nil {
 				return err
